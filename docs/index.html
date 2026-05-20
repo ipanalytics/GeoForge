@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>GeoForge - Consensus GeoIP compiler</title>
+    <meta name="description" content="GeoForge is an open-source consensus GeoIP compiler that builds reproducible local MMDB databases from multiple geolocation sources.">
+    <meta name="keywords" content="GeoForge, GeoIP, IP geolocation, MMDB, MaxMind, GeoLite2, IP2Location, DB-IP, Sypex, GeoNames, geofeed, RFC 8805, RIR, Go">
+    <meta name="robots" content="index, follow">
+    <meta property="og:title" content="GeoForge">
+    <meta property="og:description" content="Consensus GeoIP compiler for reproducible local MMDB builds.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="assets/geoforge-banner.png">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="GeoForge">
+    <meta name="twitter:description" content="Consensus GeoIP compiler for reproducible local MMDB builds.">
+    <meta name="twitter:image" content="assets/geoforge-banner.png">
+    <link rel="icon" href="favicon.svg" type="image/svg+xml">
+    <link rel="stylesheet" href="styles.css">
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "SoftwareSourceCode",
+        "name": "GeoForge",
+        "description": "Consensus GeoIP compiler for reproducible local MMDB builds.",
+        "programmingLanguage": "Go",
+        "license": "https://opensource.org/license/mit",
+        "keywords": [
+          "geoip",
+          "ip-geolocation",
+          "mmdb",
+          "geofeed",
+          "geonames",
+          "golang"
+        ]
+      }
+    </script>
+  </head>
+  <body>
+    <main>
+      <section class="hero">
+        <div class="hero-copy">
+          <p class="eyebrow">Open-source GeoIP build pipeline</p>
+          <h1>GeoForge</h1>
+          <p class="lead">Consensus GeoIP compiler for reproducible local MMDB builds.</p>
+          <div class="actions">
+            <a class="button primary" href="https://github.com/ipanalytics/GeoForge">View on GitHub</a>
+            <a class="button" href="#schema">Output schema</a>
+          </div>
+        </div>
+        <img src="assets/geoforge-banner.png" alt="GeoForge data pipeline banner">
+      </section>
+
+      <section class="grid">
+        <article>
+          <h2>Multi-source consensus</h2>
+          <p>Merge DB-IP, GeoLite2, IP2Location, Sypex, operator geofeeds, RIR delegated stats, and GeoNames reference data into a local MMDB.</p>
+        </article>
+        <article>
+          <h2>Local and reproducible</h2>
+          <p>Source downloads are checksum-tracked. Builds are skipped when inputs have not changed, and every release receives a quality report.</p>
+        </article>
+        <article>
+          <h2>Operational output</h2>
+          <p>Records include matched prefix, country metadata, registry country, city, postal code, coordinates, time zone, confidence, and accuracy radius.</p>
+        </article>
+      </section>
+
+      <section id="schema" class="panel">
+        <h2>Example output</h2>
+        <pre><code>{
+  "matched_prefix": "1.208.0.0/12",
+  "confidence": 85,
+  "location": {
+    "country_code": "KR",
+    "country_name": "South Korea",
+    "registry_country_code": "KR",
+    "city_geoname_id": 1835848,
+    "city_name": "Seoul",
+    "postal_code": "04524",
+    "latitude": 37.56631,
+    "longitude": 126.9772,
+    "time_zone": "Asia/Seoul",
+    "accuracy_radius_km": 20
+  }
+}</code></pre>
+      </section>
+
+      <section class="panel compact">
+        <h2>Repository topics</h2>
+        <p>geoip, ip-geolocation, mmdb, maxmind, geolite2, ip2location, db-ip, sypexgeo, geonames, geofeed, rfc8805, rir, golang, data-quality, offline, consensus</p>
+      </section>
+    </main>
+  </body>
+</html>
