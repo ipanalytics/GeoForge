@@ -1,278 +1,407 @@
-<p align="center">
-  <img src="assets/geoforge-banner.png" alt="GeoForge - Consensus GeoIP compiler for reproducible local MMDB builds">
-</p>
-
 # GeoForge
 
-GeoForge compiles a local IPv4 GeoIP database from multiple free or low-cost
-data sources. The builder uses DB-IP Lite as the prefix seed, merges location
-candidates from MaxMind GeoLite2, IP2Location LITE, Sypex Geo, and allowlisted
-operator geofeeds, then enriches the result with GeoNames postal and city
-reference data.
+<p align="center">
+  <img src="./assets/geoforge-banner.png" alt="GeoForge banner" width="100%">
+</p>
 
-The output is a MaxMind DB (`release/geo.mmdb`) plus a CSV audit copy
-(`release/geo.csv`) used by the quality checker.
+<p align="center">
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/license-source--available-blue" alt="License">
+  </a>
+  <a href="https://github.com/ipanalytics/GeoForge/actions">
+    <img src="https://img.shields.io/github/actions/workflow/status/ipanalytics/GeoForge/build.yml?branch=main" alt="CI">
+  </a>
+  <a href="https://github.com/ipanalytics/GeoForge">
+    <img src="https://img.shields.io/github/last-commit/ipanalytics/GeoForge" alt="Last Commit">
+  </a>
+  <a href="https://github.com/ipanalytics/GeoForge">
+    <img src="https://img.shields.io/badge/output-mmdb-success" alt="Output">
+  </a>
+  <a href="https://github.com/ipanalytics/GeoForge">
+    <img src="https://img.shields.io/badge/geoip-consensus_engine-informational" alt="Consensus Engine">
+  </a>
+  <a href="https://github.com/ipanalytics/GeoForge">
+    <img src="https://img.shields.io/badge/go-1.24+-informational" alt="Go">
+  </a>
+</p>
+
+---
+
+GeoForge is a reproducible GeoIP database compiler that builds a local MaxMind-compatible MMDB from multiple independent geolocation sources.
+
+The pipeline combines DB-IP Lite, MaxMind GeoLite2, IP2Location LITE, Sypex Geo, operator geofeeds, RIR delegated statistics, and GeoNames reference datasets into a normalized consensus-based geolocation layer.
+
+Primary outputs:
+
+* `release/geo.mmdb`
+* `release/geo.csv`
+* `release/geo-quality-report.txt`
+
+---
+
+## Overview
+
+Free GeoIP datasets typically optimize for broad coverage, not cross-source validation.
+
+GeoForge approaches geolocation as a consensus problem:
+
+```text id="v6v3l1"
+prefix seed
+    -> multi-source candidate collection
+    -> confidence scoring
+    -> normalization
+    -> conflict resolution
+    -> reproducible MMDB output
+```
+
+The builder merges independent signals, downranks inconsistent records, applies conservative normalization rules, and produces an auditable local database suitable for gateways, analytics, enrichment services, fraud systems, and infrastructure tooling.
+
+The project is designed for:
+
+* offline local lookups
+* deterministic rebuilds
+* source transparency
+* quality regression tracking
+* operational GeoIP enrichment
+
+---
+
+## Architecture
+
+```text id="w6u0a6"
+                 Source Databases
+                         │
+      ┌──────────────────┼──────────────────┐
+      │                  │                  │
+      ▼                  ▼                  ▼
+   GeoLite2         IP2Location        Sypex Geo
+      │                  │                  │
+      └──────────────┬───┴──────────────────┘
+                     ▼
+              Consensus Engine
+         scoring / merge / weighting
+                     ▼
+             GeoNames Enrichment
+          postal / city normalization
+                     ▼
+               Output Cleanup
+         timezone / precision / QA
+                     ▼
+                 MMDB Export
+```
+
+---
 
 ## Repository Layout
 
-```text
+```text id="qzjlwm"
 cmd/
-  builder/       Main database compiler.
-  qualitycheck/  Post-build quality report.
+├── builder/         Main database compiler
+└── qualitycheck/    Post-build validation
+
 internal/
-  consensus/     Candidate scoring and merge logic.
-  geofeed/       RFC 8805 geofeed parser and lookup index.
-  geozip/        GeoNames postal/city indexes and coordinate normalization.
-  output/        Final output cleanup.
-  refdata/       Country, currency, calling code, EU, and source priority data.
-  rirstats/      Bulk RIR delegated-statistics index.
-  strnorm/       Name and postal normalization utilities.
+├── consensus/       Merge and scoring logic
+├── geofeed/         RFC 8805 parser/index
+├── geozip/          GeoNames enrichment
+├── output/          Final normalization
+├── refdata/         Country/currency metadata
+├── rirstats/        RIR delegated statistics
+└── strnorm/         String normalization
+
 data/
-  Source databases and downloader state. Generated data is gitignored.
 release/
-  Build outputs. Generated files are gitignored.
 scripts/
-  Data download automation.
 ```
+
+Downloaded source datasets and generated outputs are intentionally gitignored.
+
+---
 
 ## Data Sources
 
-The builder can use these sources when present:
+| Source                | Role                           |
+| --------------------- | ------------------------------ |
+| DB-IP Lite            | Required prefix seed           |
+| MaxMind GeoLite2 City | Consensus baseline             |
+| IP2Location LITE DB5  | Independent geo signal         |
+| Sypex Geo City        | CIS-focused enrichment         |
+| RFC 8805 geofeeds     | Operator-published corrections |
+| RIR delegated stats   | Registry country attribution   |
+| GeoNames postal dump  | Postal enrichment              |
+| GeoNames cities1000   | City geoname resolution        |
 
-| Source | Role |
-| --- | --- |
-| DB-IP City Lite CSV | Required prefix seed. Defines the blocks to write. |
-| MaxMind GeoLite2 City | Optional consensus input. Strong global baseline. |
-| IP2Location LITE DB5 | Optional consensus input. Useful independent city/postal signal. |
-| Sypex Geo City | Optional consensus input for CIS countries. |
-| RFC 8805 geofeeds | Optional operator-published corrections from `data/geofeeds/allowlist.tsv`. |
-| RIR delegated stats | Registry country signal for `registry_country_code`. |
-| GeoNames postal dump | Postal/city enrichment and public coordinate reference. |
-| GeoNames cities1000 dump | `city_geoname_id` enrichment. |
+GeoForge separates source collection from output generation, allowing partial builds when some datasets are unavailable.
 
-Downloaded source files and generated release files are not intended to be
-committed. See [THIRD_PARTY_DATA.md](THIRD_PARTY_DATA.md) before publishing or
-redistributing any derived database.
+---
 
 ## Build
 
-Create a local `admin.env` from the template and fill only the credentials you
-actually have:
+Create a local environment file:
 
-```bash
+```bash id="98c9ga"
 cp admin.env.example admin.env
 ```
 
-Run the build:
+Run the pipeline:
 
-```bash
+```bash id="91ol1k"
 ./geo.sh
 ```
 
-The script:
+The build workflow:
 
-1. Acquires a build lock under `release/`.
-2. Downloads and updates source databases when they changed.
-3. Skips the MMDB build if no source changed and an existing release is present.
-4. Runs Go tests.
-5. Compiles `./builder`.
-6. Builds `release/geo.mmdb` and `release/geo.csv`.
-7. Runs the post-build quality check.
+1. Acquires a release lock
+2. Downloads updated datasets
+3. Detects source changes
+4. Runs Go tests
+5. Compiles builders
+6. Generates MMDB + CSV outputs
+7. Runs quality validation
 
-Use `FORCE_BUILD=1 ./geo.sh` to rebuild even when sources are unchanged.
-Use `AUTO_DOWNLOAD=0 ./geo.sh` to build from the currently installed data files.
+Force rebuild:
 
-## Update Semantics
+```bash id="kt8o26"
+FORCE_BUILD=1 ./geo.sh
+```
 
-`scripts/download_data.sh` downloads into temporary files, unpacks archives when
-needed, computes SHA256 of the final unpacked file, and replaces the installed
-source only when content changed. The visible state files are:
+Disable downloads:
 
-- `data/download-state.tsv`
-- `data/download-changed.txt`
+```bash id="dffxx7"
+AUTO_DOWNLOAD=0 ./geo.sh
+```
 
-When `data/download-changed.txt` is `0`, `geo.sh` keeps the existing MMDB unless
-`FORCE_BUILD=1` is set.
+---
 
-## Output Schema
+## Outputs
 
-Each MMDB record contains top-level metadata and a nested `location` object.
+| File                             | Description                       |
+| -------------------------------- | --------------------------------- |
+| `release/geo.mmdb`               | MaxMind-compatible GeoIP database |
+| `release/geo.csv`                | CSV audit/export copy             |
+| `release/geo-quality-report.txt` | Post-build quality analysis       |
+| `release/geo.previous.csv`       | Previous snapshot for diffing     |
 
-Top-level fields:
+---
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `matched_prefix` | String | CIDR written to the MMDB. |
-| `confidence` | Uint16 | Merge confidence, 0-100. |
-| `source_updated_at` | String | UTC build timestamp. |
-| `country_metadata` | Map | Country-level calling code, currency, and EU metadata. |
-| `location` | Map | Geo fields listed below. |
+## Record Schema
 
-`location` fields:
+Each MMDB entry contains top-level metadata plus a nested `location` object.
 
-| Field | Type | Description |
-| --- | --- | --- |
-| `continent_code` | String | Continent code. |
-| `continent_name` | String | Continent name. |
-| `country_code` | String | Geo country ISO 3166-1 alpha-2. |
-| `country_name` | String | Short English country name. |
-| `registry_country_code` | String | Registry country from RIR delegated stats when available. |
-| `subdivision_name` | String | Cleaned state/region/admin name. |
-| `city_geoname_id` | Uint32 | GeoNames city id when resolved. |
-| `city_name` | String | Cleaned display city name. |
-| `postal_code` | String | Consensus or GeoNames-derived postal code. |
-| `latitude` | Float64 | Final latitude rounded to five decimals. |
-| `longitude` | Float64 | Final longitude rounded to five decimals. |
-| `time_zone` | String | Computed from final coordinates. |
-| `accuracy_radius_km` | Uint16 | Conservative radius derived from confidence and prefix size. |
+### Top-Level Fields
 
-`calling_code`, `currency_code`, and `is_eu_member` are kept under
-`country_metadata`. DST status is intentionally not stored; consumers should
-compute it from `time_zone` at request time.
+| Field               | Description                       |
+| ------------------- | --------------------------------- |
+| `matched_prefix`    | CIDR written into MMDB            |
+| `confidence`        | Consensus confidence score        |
+| `source_updated_at` | UTC build timestamp               |
+| `country_metadata`  | Country/currency/calling metadata |
+| `location`          | Final geolocation object          |
 
-## Example JSON
+### Location Fields
 
-```json
+| Field                   | Description                    |
+| ----------------------- | ------------------------------ |
+| `continent_code`        | Continent code                 |
+| `country_code`          | ISO country                    |
+| `registry_country_code` | RIR-derived registry country   |
+| `subdivision_name`      | Normalized admin region        |
+| `city_geoname_id`       | GeoNames city identifier       |
+| `city_name`             | Normalized city                |
+| `postal_code`           | Consensus postal code          |
+| `latitude`              | Rounded latitude               |
+| `longitude`             | Rounded longitude              |
+| `time_zone`             | Derived timezone               |
+| `accuracy_radius_km`    | Conservative accuracy estimate |
+
+---
+
+## Example Record
+
+```json id="k7v7uy"
 {
   "ip": "1.208.10.20",
   "matched_prefix": "1.208.0.0/12",
   "confidence": 85,
   "source_updated_at": "2026-05-20T00:00:00Z",
   "location": {
-    "continent_code": "AS",
-    "continent_name": "Asia",
     "country_code": "KR",
     "country_name": "South Korea",
-    "registry_country_code": "KR",
-    "subdivision_name": "",
-    "city_geoname_id": 1835848,
     "city_name": "Seoul",
     "postal_code": "04524",
     "latitude": 37.56631,
     "longitude": 126.9772,
     "time_zone": "Asia/Seoul",
     "accuracy_radius_km": 20
-  },
-  "country_metadata": {
-    "KR": {
-      "country_name": "South Korea",
-      "calling_code": "82",
-      "currency_code": "KRW",
-      "is_eu_member": false
-    }
   }
 }
 ```
 
-## Output Quality
+---
 
-The generated database is designed to be materially better than any single free
-or lite source for operational use, because it combines independent signals and
-rejects or downranks obvious bad records before writing output.
+## Quality Model
 
-Expected strengths compared with single lite sources:
+GeoForge is designed to improve operational quality through source consensus rather than raw source replacement.
 
-- Better country stability through consensus and RIR registry separation.
-- Better city stability where MaxMind, IP2Location, DB-IP, Sypex, and geofeeds
-  agree.
-- Better CIS handling when Sypex is available.
-- Better postal/city fill rate when GeoNames postal data can safely enrich an
-  otherwise incomplete record.
-- Cleaner display fields through output normalization and mojibake repair.
-- More transparent precision through `accuracy_radius_km` instead of implying
-  exact point accuracy.
+Expected improvements over single-source lite datasets:
 
-Expected limitations:
+* better country stability
+* improved city consistency
+* stronger CIS coverage
+* cleaner normalization
+* more conservative precision signaling
+* reduced malformed text artifacts
 
-- It is not a substitute for a licensed premium database when contractual SLA,
-  redistribution rights, mobile-carrier accuracy, or frequently updated
-  enterprise network attribution is required.
-- The seed range layout comes from DB-IP Lite. If a prefix is missing there, the
-  builder will not invent it from other sources.
-- City-level accuracy remains probabilistic. IP geolocation should be treated as
-  region/city guidance, not a physical address signal.
-- Geofeeds improve operator-owned ranges but can be narrow in coverage.
+The builder intentionally favors stable consensus over aggressive precision claims.
 
-A reasonable expectation is:
-
-- Country-level quality should usually match or exceed lite databases.
-- City-level quality should often exceed a single lite source when at least two
-  independent inputs agree, but it will not consistently match premium feeds for
-  mobile, VPN, enterprise, or fast-moving allocations.
-- Postal code quality should be treated as opportunistic enrichment unless the
-  source consensus and `accuracy_radius_km` support it.
+---
 
 ## Quality Gate
 
-After every build, `geo.sh` snapshots the previous `release/geo.csv` as
-`release/geo.previous.csv`, runs `cmd/qualitycheck`, and writes
-`release/geo-quality-report.txt`.
+After each build, the pipeline runs a post-build validation stage and generates:
 
-The report includes:
+```text id="2ifjlwm"
+release/geo-quality-report.txt
+```
 
-- Record count.
-- Country, city, postal, and GeoNames-id coverage.
-- Average confidence and low-confidence share.
-- Added and removed prefixes.
-- Country/city/postal/geoname regressions.
-- Country and city changes.
-- Text artifact count after cleanup.
-- MMDB smoke lookups against sample IPs.
+Validation includes:
 
-By default the quality check fails only if the MMDB is unreadable or sample
-lookups return invalid records. Strict mode can be enabled with:
+* coverage statistics
+* confidence distribution
+* added/removed prefixes
+* country/city regressions
+* mojibake detection
+* MMDB smoke lookups
 
-```bash
+Enable strict mode:
+
+```bash id="0xx2kq"
 QUALITY_STRICT=1 ./geo.sh
 ```
 
-Strict mode also fails on significant coverage loss, suspicious text artifacts,
-or large confidence regressions.
+Strict mode fails the build on large regressions or suspicious output anomalies.
+
+---
 
 ## Normalization
 
-Final records are normalized immediately before writing:
+Final records are normalized immediately before export.
 
-- Coordinates are rounded to five decimal places.
-- City parentheticals are removed when they are clearly neighborhoods or labels.
-- Common admin prefixes and suffixes are normalized for Cyrillic, Korean,
-  Kazakh, Uzbek, Arabic, Vietnamese, Japanese, Spanish, and Portuguese forms.
-- Common mojibake sequences are repaired.
-- Duplicate state/city pairs are collapsed.
-- Time zone is computed from final coordinates.
+Normalization includes:
 
-Normalization is intentionally conservative. It does not rewrite official
-prefecture names such as `Tokyo-to`, `Osaka-fu`, or `Hokkaido`, and it does not
-perform broad cross-language city renaming at the output layer.
+* coordinate rounding
+* mojibake repair
+* subdivision cleanup
+* duplicate collapse
+* timezone derivation
+* conservative multilingual cleanup
+
+Normalization intentionally avoids broad transliteration or aggressive geopolitical rewriting.
+
+---
 
 ## Geofeeds
 
 Allowlisted RFC 8805 feeds are configured in:
 
-```text
+```text id="u6u1kq"
 data/geofeeds/allowlist.tsv
 ```
 
-The downloader installs each feed as `data/geofeeds/<name>.csv`. The parser
-accepts both four-column and five-column feed rows:
+Supported formats:
 
-```text
+```text id="s5kzzf"
 prefix,country,region,city
 prefix,country,region,city,postal
 ```
 
-`GEOFEED_MAX_IPV4_BITS=24` is the default floor for IPv4 geofeed entries. This
-keeps host-level or extremely narrow entries from inflating the output tree.
+Default IPv4 floor:
+
+```text id="zy7t6x"
+GEOFEED_MAX_IPV4_BITS=24
+```
+
+This prevents excessive host-level fragmentation from narrow geofeed entries.
+
+---
+
+## Update Semantics
+
+The downloader uses content hashing and atomic replacement semantics.
+
+Tracked state files:
+
+```text id="dcbx3n"
+data/download-state.tsv
+data/download-changed.txt
+```
+
+If no source changed, the builder preserves the existing MMDB unless forced.
+
+---
+
+## Use Cases
+
+| Domain          | Example                  |
+| --------------- | ------------------------ |
+| Fraud Detection | Geo consistency checks   |
+| SIEM Enrichment | Country/city attribution |
+| Analytics       | Geographic aggregation   |
+| Gateways        | Local GeoIP lookups      |
+| Data Pipelines  | IP enrichment            |
+| Infrastructure  | Region-aware routing     |
+
+---
+
+## Operational Notes
+
+* City-level geolocation remains probabilistic
+* Mobile and VPN accuracy may vary substantially
+* Prefix coverage depends on DB-IP Lite seed availability
+* Postal enrichment should be treated as opportunistic
+* Geofeeds improve operator-owned allocations but are uneven globally
+
+---
 
 ## Publication
 
-The code can be published separately from the downloaded databases. Do not
-commit:
+The repository is designed so code can be published independently from downloaded datasets.
 
-- `admin.env`
-- downloaded files under `data/`
-- generated files under `release/`
-- API tokens, account IDs, license keys, or authenticated download URLs
+Do not commit:
 
-Review [THIRD_PARTY_DATA.md](THIRD_PARTY_DATA.md) before distributing any
-derived database.
+* `admin.env`
+* downloaded provider databases
+* generated release artifacts
+* API credentials or license tokens
+
+Review `THIRD_PARTY_DATA.md` before redistributing derived outputs.
+
+---
+
+## Roadmap
+
+Planned additions:
+
+* ASN-aware geo heuristics
+* confidence-weighted source tuning
+* regional regression dashboards
+* IPv6 quality scoring
+* compressed bulk exports
+* build reproducibility attestations
+
+---
+
+## License
+
+See [`LICENSE`](./LICENSE).
+
+Additional redistribution guidance:
+
+```text id="4ft7ps"
+THIRD_PARTY_DATA.md
+```
+
+---
+
+## Disclaimer
+
+GeoForge aggregates third-party geolocation datasets into derived operational outputs. IP geolocation should be treated as probabilistic infrastructure metadata, not physical-user attribution.
