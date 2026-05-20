@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/geoforge-banner.png" alt="GeoForge - Consensus GeoIP compiler for reproducible local MMDB builds">
+</p>
+
 # GeoForge
 
 GeoForge compiles a local IPv4 GeoIP database from multiple free or low-cost
