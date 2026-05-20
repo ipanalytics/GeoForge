@@ -3,18 +3,19 @@
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>GeoForge - Consensus GeoIP compiler</title>
-    <meta name="description" content="GeoForge is an open-source consensus GeoIP compiler that builds reproducible local MMDB databases from multiple geolocation sources.">
-    <meta name="keywords" content="GeoForge, GeoIP, IP geolocation, MMDB, MaxMind, GeoLite2, IP2Location, DB-IP, Sypex, GeoNames, geofeed, RFC 8805, RIR, Go">
+    <title>GeoForge - Consensus GeoIP MMDB Builder</title>
+    <meta name="description" content="GeoForge builds a local GeoIP MMDB by combining DB-IP, GeoLite2, IP2Location, Sypex, geofeeds, RIR data, and GeoNames into a reproducible consensus database with quality checks.">
+    <meta name="keywords" content="GeoForge, GeoIP database, IP geolocation, MMDB builder, MaxMind DB, GeoLite2, IP2Location, DB-IP, Sypex Geo, GeoNames, geofeed, RFC 8805, RIR delegated stats, Go">
     <meta name="robots" content="index, follow">
-    <meta property="og:title" content="GeoForge">
-    <meta property="og:description" content="Consensus GeoIP compiler for reproducible local MMDB builds.">
+    <meta property="og:title" content="GeoForge - Consensus GeoIP MMDB Builder">
+    <meta property="og:description" content="Build a local GeoIP database from multiple sources with consensus scoring, GeoNames enrichment, geofeed support, and post-build quality reports.">
     <meta property="og:type" content="website">
     <meta property="og:image" content="assets/geoforge-banner.png">
     <meta name="twitter:card" content="summary_large_image">
-    <meta name="twitter:title" content="GeoForge">
-    <meta name="twitter:description" content="Consensus GeoIP compiler for reproducible local MMDB builds.">
+    <meta name="twitter:title" content="GeoForge - Consensus GeoIP MMDB Builder">
+    <meta name="twitter:description" content="A reproducible local GeoIP MMDB compiler for teams that need more control than a single lite database can provide.">
     <meta name="twitter:image" content="assets/geoforge-banner.png">
+    <link rel="canonical" href="https://ipanalytics.github.io/GeoForge/">
     <link rel="icon" href="favicon.svg" type="image/svg+xml">
     <link rel="stylesheet" href="styles.css">
     <script type="application/ld+json">
@@ -22,16 +23,21 @@
         "@context": "https://schema.org",
         "@type": "SoftwareSourceCode",
         "name": "GeoForge",
-        "description": "Consensus GeoIP compiler for reproducible local MMDB builds.",
+        "description": "Consensus GeoIP MMDB builder for reproducible local IP geolocation databases.",
         "programmingLanguage": "Go",
         "license": "https://opensource.org/license/mit",
+        "codeRepository": "https://github.com/ipanalytics/GeoForge",
+        "applicationCategory": "DeveloperApplication",
+        "operatingSystem": "Linux, macOS",
         "keywords": [
           "geoip",
           "ip-geolocation",
           "mmdb",
+          "maxmind",
           "geofeed",
           "geonames",
-          "golang"
+          "golang",
+          "data-quality"
         ]
       }
     </script>
@@ -40,41 +46,116 @@
     <main>
       <section class="hero">
         <div class="hero-copy">
-          <p class="eyebrow">Open-source GeoIP build pipeline</p>
+          <p class="eyebrow">Local GeoIP database compiler</p>
           <h1>GeoForge</h1>
-          <p class="lead">Consensus GeoIP compiler for reproducible local MMDB builds.</p>
+          <p class="lead">Build a reproducible GeoIP MMDB from multiple lite, public, and operator-published sources instead of trusting a single feed.</p>
           <div class="actions">
             <a class="button primary" href="https://github.com/ipanalytics/GeoForge">View on GitHub</a>
-            <a class="button" href="#schema">Output schema</a>
+            <a class="button" href="#quality">Accuracy model</a>
+          </div>
+          <div class="badges" aria-label="Project attributes">
+            <span>Go</span>
+            <span>MMDB</span>
+            <span>Offline build</span>
+            <span>Quality report</span>
           </div>
         </div>
-        <img src="assets/geoforge-banner.png" alt="GeoForge data pipeline banner">
+        <img src="assets/geoforge-banner.png" alt="GeoForge consensus GeoIP data pipeline">
+      </section>
+
+      <section class="statement">
+        <h2>GeoIP data is noisy. GeoForge makes the build process measurable.</h2>
+        <p>Free and lite GeoIP databases are useful, but each source has blind spots: stale allocations, missing cities, inconsistent romanization, weak postal coverage, registry country mismatches, and coordinates that imply more precision than IP geolocation can support. GeoForge turns those independent feeds into a controlled local database with consensus scoring, normalization, and a quality gate after every build.</p>
       </section>
 
       <section class="grid">
         <article>
-          <h2>Multi-source consensus</h2>
-          <p>Merge DB-IP, GeoLite2, IP2Location, Sypex, operator geofeeds, RIR delegated stats, and GeoNames reference data into a local MMDB.</p>
+          <h2>Consensus over one-source trust</h2>
+          <p>GeoForge compares candidate records from DB-IP, GeoLite2, IP2Location, Sypex, and geofeeds. City names, state names, postal codes, and coordinates are scored together so agreement is stronger than any individual provider priority.</p>
         </article>
         <article>
-          <h2>Local and reproducible</h2>
-          <p>Source downloads are checksum-tracked. Builds are skipped when inputs have not changed, and every release receives a quality report.</p>
+          <h2>Better operational coverage</h2>
+          <p>GeoNames postal and city data can fill missing postal codes, recover city names from postal codes, and attach stable city geoname IDs. RIR delegated stats keep registry country separate from the final geolocation country.</p>
         </article>
         <article>
-          <h2>Operational output</h2>
-          <p>Records include matched prefix, country metadata, registry country, city, postal code, coordinates, time zone, confidence, and accuracy radius.</p>
+          <h2>Local, repeatable, auditable</h2>
+          <p>The downloader tracks checksums, ETags, and Last-Modified headers. If sources did not change, the existing MMDB is kept. Every build writes a CSV audit copy and a quality report for regression review.</p>
         </article>
       </section>
 
-      <section id="schema" class="panel">
-        <h2>Example output</h2>
+      <section id="quality" class="split">
+        <div>
+          <p class="eyebrow">Accuracy positioning</p>
+          <h2>Designed to outperform a single lite source, not to overclaim premium-grade certainty.</h2>
+          <p>GeoForge is strongest when multiple independent inputs agree on the same country, city, state, postal code, or nearby coordinate cluster. In those cases the output can be more stable than using DB-IP Lite, GeoLite2, IP2Location LITE, or Sypex alone. It also improves display quality by cleaning common administrative suffixes, city duplicates, parenthetical labels, and mojibake text artifacts.</p>
+          <p>Premium commercial databases can still be better for contractual SLA, mobile-carrier attribution, frequently updated enterprise networks, fraud-focused signals, and redistribution rights. GeoForge is best suited for teams that want a transparent local build process, stronger lite-source coverage, and control over the source mix.</p>
+        </div>
+        <div class="metric-list">
+          <div><strong>Country</strong><span>Usually matches or exceeds lite feeds through consensus and registry separation.</span></div>
+          <div><strong>City</strong><span>Improves when two or more independent sources agree or a trusted geofeed covers the prefix.</span></div>
+          <div><strong>Postal</strong><span>Useful enrichment when supported by GeoNames and consistent city evidence.</span></div>
+          <div><strong>Precision</strong><span>Exposes `accuracy_radius_km` instead of implying exact physical location.</span></div>
+        </div>
+      </section>
+
+      <section class="panel">
+        <h2>Source pipeline</h2>
+        <div class="pipeline">
+          <div>DB-IP seed ranges</div>
+          <div>MaxMind GeoLite2</div>
+          <div>IP2Location LITE</div>
+          <div>Sypex Geo</div>
+          <div>Operator geofeeds</div>
+          <div>RIR delegated stats</div>
+          <div>GeoNames enrichment</div>
+          <div>MMDB + CSV audit</div>
+        </div>
+      </section>
+
+      <section class="split">
+        <div>
+          <p class="eyebrow">Use cases</p>
+          <h2>Where GeoForge fits</h2>
+          <ul>
+            <li>Internal analytics dashboards that need local GeoIP lookup without a network call.</li>
+            <li>Traffic reporting where country and city stability matter more than address-level precision.</li>
+            <li>Edge or offline environments that need an MMDB file built from controlled inputs.</li>
+            <li>Data engineering teams that want to compare monthly source changes before promoting a new database.</li>
+            <li>Projects that use geofeeds to correct operator-owned ranges faster than vendor monthly updates.</li>
+          </ul>
+        </div>
+        <div>
+          <p class="eyebrow">Data quality controls</p>
+          <h2>What is checked before release</h2>
+          <ul>
+            <li>Record count and prefix additions/removals.</li>
+            <li>Country, city, postal, and GeoNames ID coverage.</li>
+            <li>Average confidence and low-confidence share.</li>
+            <li>Country/city/postal regressions versus the previous build.</li>
+            <li>Text artifact detection after cleanup.</li>
+            <li>MMDB smoke lookups against sample IPs.</li>
+          </ul>
+        </div>
+      </section>
+
+      <section id="schema" class="panel schema">
+        <div>
+          <p class="eyebrow">Output schema</p>
+          <h2>Operational JSON shape</h2>
+          <p>The MMDB stores a compact record with matched prefix, confidence, location fields, and country metadata. Time zone is computed from final coordinates; DST is left to the consumer at request time.</p>
+        </div>
         <pre><code>{
+  "ip": "1.208.10.20",
   "matched_prefix": "1.208.0.0/12",
   "confidence": 85,
+  "source_updated_at": "2026-05-20T00:00:00Z",
   "location": {
+    "continent_code": "AS",
+    "continent_name": "Asia",
     "country_code": "KR",
     "country_name": "South Korea",
     "registry_country_code": "KR",
+    "subdivision_name": "",
     "city_geoname_id": 1835848,
     "city_name": "Seoul",
     "postal_code": "04524",
@@ -82,8 +163,31 @@
     "longitude": 126.9772,
     "time_zone": "Asia/Seoul",
     "accuracy_radius_km": 20
+  },
+  "country_metadata": {
+    "KR": {
+      "country_name": "South Korea",
+      "calling_code": "82",
+      "currency_code": "KRW",
+      "is_eu_member": false
+    }
   }
 }</code></pre>
+      </section>
+
+      <section class="grid">
+        <article>
+          <h2>Geofeed-ready</h2>
+          <p>Allowlisted RFC 8805 feeds can be imported as operator-published candidates. GeoForge supports four-column and five-column feed rows and limits narrow IPv4 entries by default.</p>
+        </article>
+        <article>
+          <h2>No bundled vendor data</h2>
+          <p>The repository ships code, not licensed databases. Users provide their own credentials and accept the terms of each data provider before building derived outputs.</p>
+        </article>
+        <article>
+          <h2>Built for GitOps</h2>
+          <p>Build locks, checksum-based updates, deterministic output paths, and quality reports make the database lifecycle easier to review in automation.</p>
+        </article>
       </section>
 
       <section class="panel compact">
