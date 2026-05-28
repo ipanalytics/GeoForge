@@ -1,7 +1,7 @@
 # GeoForge
 
 <p align="center">
-  <img src="./assets/geoforge-banner.png" alt="GeoForge banner" width="100%">
+  <img src="./assets/banner.png" alt="GeoForge banner" width="100%">
 </p>
 
 <p align="center">
