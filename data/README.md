@@ -1,5 +1,7 @@
 # data/
 
+_Русская версия: [README.ru.md](README.ru.md)_
+
 Place the source databases here:
 
 - `dbip-city-lite.csv` — DB-IP City Lite, the seed (defines which CIDR blocks exist).

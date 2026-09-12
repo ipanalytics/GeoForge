@@ -1,5 +1,7 @@
 # release/
 
+_Русская версия: [README.ru.md](README.ru.md)_
+
 Build output lands here.
 
 - `geo.mmdb` — final compiled MMDB, the deliverable.

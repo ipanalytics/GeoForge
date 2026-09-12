@@ -1,5 +1,7 @@
 # GeoForge
 
+_Русская версия: [README.ru.md](README.ru.md)_
+
 <p align="center">
   <img src="./assets/banner.png" alt="GeoForge banner" width="100%">
 </p>
